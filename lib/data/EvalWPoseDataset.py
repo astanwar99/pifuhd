@@ -138,13 +138,13 @@ class EvalWPoseDataset(Dataset):
     def modify_commandline_options(parser, is_train):
         return parser
 
-    def __init__(self, opt, projection='orthogonal'):
+    def __init__(self, image, image_keypoints, opt, projection='orthogonal'):
         self.opt = opt
         self.projection_mode = projection
 
         self.root = self.opt.dataroot
-        self.img_files = sorted([os.path.join(self.root,f) for f in os.listdir(self.root) if f.split('.')[-1] in ['png', 'jpeg', 'jpg', 'PNG', 'JPG', 'JPEG'] and os.path.exists(os.path.join(self.root,f.replace('.%s' % (f.split('.')[-1]), '_keypoints.json')))])
-        self.IMG = os.path.join(self.root)
+        self.img_files = 'sample_images/test_keypoints.json'
+        self.IMG = image
 
         self.phase = 'val'
         self.load_size = self.opt.loadSize
@@ -168,67 +168,91 @@ class EvalWPoseDataset(Dataset):
     def __len__(self):
         return len(self.img_files)
 
+    def getKeypoints(self, json):
+        file_name = json
+        with open(file_name) as infile:
+            raw = infile.read()
+            raw = raw.strip('[')
+            raw = raw.strip(']')
+            arr = raw.split(']], [[')
+
+        reconstructed_keypoints = []
+        for person in arr:
+            keypoints = person.split('], [')
+            temp = []
+            for keypoint in keypoints:
+                key_list = [float(x) for x in keypoint.split(', ')]
+                temp.append(key_list)
+            reconstructed_keypoints.append(temp)
+        return np.asarray(reconstructed_keypoints)
+
     def get_n_person(self, index):
-        joint_path = self.img_files[index].replace('.%s' % (self.img_files[index].split('.')[-1]), '_keypoints.json')
-        # Calib
-        with open(joint_path) as json_file:
-            data = json.load(json_file)
-            return len(data['people'])            
+        return 1
+        # joint_path = self.img_files[index].replace('.%s' % (self.img_files[index].split('.')[-1]), '_keypoints.json')
+        # # Calib
+        # with open(joint_path) as json_file:
+        #     data = json.load(json_file)
+        #     return len(data['people'])            
 
     def get_item(self, index):
-        img_path = self.img_files[index]
-        joint_path = self.img_files[index].replace('.%s' % (self.img_files[index].split('.')[-1]), '_keypoints.json')
-        # Name
-        img_name = os.path.splitext(os.path.basename(img_path))[0]
+        # img_path = self.img_files[index]
+        # joint_path = self.img_files[index].replace('.%s' % (self.img_files[index].split('.')[-1]), '_keypoints.json')
+        # # Name
+        # img_name = os.path.splitext(os.path.basename(img_path))[0]
         # Calib
-        with open(joint_path) as json_file:
+        
+        with open(self.img_files) as json_file:
             data = json.load(json_file)
-            if len(data['people']) == 0:
-                raise IOError('non human found!!')
+        selected_data = data['people'][0]
+        #     if len(data['people']) == 0:
+        #         raise IOError('non human found!!')
             
-            # if True, the person with the largest height will be chosen. 
-            # set to False for multi-person processing
-            if True:
-                selected_data = data['people'][0]
-                height = 0
-                if len(data['people']) != 1:
-                    for i in range(len(data['people'])):
-                        tmp = data['people'][i]
-                        keypoints = np.array(tmp['pose_keypoints_2d']).reshape(-1,3)
+        #     # if True, the person with the largest height will be chosen. 
+        #     # set to False for multi-person processing
+        #     if True:
+        #         selected_data = data['people'][0]
+        #         height = 0
+        #         if len(data['people']) != 1:
+        #             for i in range(len(data['people'])):
+        #                 tmp = data['people'][i]
+        #                 keypoints = np.array(tmp['pose_keypoints_2d']).reshape(-1,3)
 
-                        flags = keypoints[:,2] > 0.5 #openpose
-                        # flags = keypoints[:,2] > 0.2  #detectron
-                        if sum(flags) == 0:
-                            continue
-                        bbox = keypoints[flags]
-                        bbox_max = bbox.max(0)
-                        bbox_min = bbox.min(0)
+        #                 flags = keypoints[:,2] > 0.5 #openpose
+        #                 # flags = keypoints[:,2] > 0.2  #detectron
+        #                 if sum(flags) == 0:
+        #                     continue
+        #                 bbox = keypoints[flags]
+        #                 bbox_max = bbox.max(0)
+        #                 bbox_min = bbox.min(0)
 
-                        if height < bbox_max[1] - bbox_min[1]:
-                            height = bbox_max[1] - bbox_min[1]
-                            selected_data = tmp
-            else:
-                pid = min(len(data['people'])-1, self.person_id)
-                selected_data = data['people'][pid]
+        #                 if height < bbox_max[1] - bbox_min[1]:
+        #                     height = bbox_max[1] - bbox_min[1]
+        #                     selected_data = tmp
+        #     else:
+        #         pid = min(len(data['people'])-1, self.person_id)
+        #         selected_data = data['people'][pid]
 
-            keypoints = np.array(selected_data['pose_keypoints_2d']).reshape(-1,3)
+        #     keypoints = np.array(selected_data['pose_keypoints_2d']).reshape(-1,3)
 
-            flags = keypoints[:,2] > 0.5   #openpose
-            # flags = keypoints[:,2] > 0.2    #detectron
+        #     flags = keypoints[:,2] > 0.5   #openpose
+        #     # flags = keypoints[:,2] > 0.2    #detectron
 
-            nflag = flags[0]
-            mflag = flags[1]
+        #     nflag = flags[0]
+        #     mflag = flags[1]
 
-            check_id = [2, 5, 15, 16, 17, 18]
-            cnt = sum(flags[check_id])
-            if self.opt.crop_type == 'face' and (not (nflag and cnt > 3)):
-                print('Waring: face should not be backfacing.')
-            if self.opt.crop_type == 'upperbody' and (not (mflag and nflag and cnt > 3)):
-                print('Waring: upperbody should not be backfacing.')
-            if self.opt.crop_type == 'fullbody' and sum(flags) < 15:
-                print('Waring: not sufficient keypoints.')
-
-        im = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+        #     check_id = [2, 5, 15, 16, 17, 18]
+        #     cnt = sum(flags[check_id])
+        #     if self.opt.crop_type == 'face' and (not (nflag and cnt > 3)):
+        #         print('Waring: face should not be backfacing.')
+        #     if self.opt.crop_type == 'upperbody' and (not (mflag and nflag and cnt > 3)):
+        #         print('Waring: upperbody should not be backfacing.')
+        #     if self.opt.crop_type == 'fullbody' and sum(flags) < 15:
+        #         print('Waring: not sufficient keypoints.')
+        
+        
+        # keypoints = self.getKeypoints(self.img_files)
+        keypoints = np.array(selected_data['pose_keypoints_2d']).reshape(-1,3)
+        im = self.IMG
         if im.shape[2] == 4:
             im = im / 255.0
             im[:,:,:3] /= im[:,:,3:] + 1e-8
@@ -269,7 +293,7 @@ class EvalWPoseDataset(Dataset):
         image_512 = self.to_tensor(image_512)
         image = self.to_tensor(image)
         return {
-            'name': img_name,
+            'name': '3d',
             'img': image.unsqueeze(0),
             'img_512': image_512.unsqueeze(0),
             'calib': calib.unsqueeze(0),

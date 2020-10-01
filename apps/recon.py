@@ -128,7 +128,7 @@ def gen_mesh_imgColor(res, net, cuda, data, save_path, thresh=0.5, use_octree=Tr
         print(e)
 
 
-def recon(opt, use_rect=False):
+def recon(image, keypoints, opt, use_rect=False):
     # load checkpoints
     state_dict_path = None
     if opt.load_netMR_checkpoint_path is not None:
@@ -167,7 +167,7 @@ def recon(opt, use_rect=False):
     if use_rect:
         test_dataset = EvalDataset(opt)
     else:
-        test_dataset = EvalWPoseDataset(opt)
+        test_dataset = EvalWPoseDataset(image, keypoints, opt)
 
     print('test data size: ', len(test_dataset))
     projection_mode = test_dataset.projection_mode
@@ -215,9 +215,9 @@ def recon(opt, use_rect=False):
                     save_path = '%s/%s/recon/result_%s_%d.obj' % (opt.results_path, opt.name, test_data['name'], j)
                     gen_mesh(opt.resolution, netMR, cuda, test_data, save_path, components=opt.use_compose)
 
-def reconWrapper(args=None, use_rect=False):
+def reconWrapper(image, keypoints, args=None, use_rect=False):
     opt = parser.parse(args)
-    recon(opt, use_rect)
+    recon(image, keypoints, opt, use_rect)
 
 if __name__ == '__main__':
     reconWrapper()
