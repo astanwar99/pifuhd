@@ -143,7 +143,7 @@ class EvalWPoseDataset(Dataset):
         self.projection_mode = projection
 
         self.root = self.opt.dataroot
-        self.img_files = 'sample_images/test_keypoints.json'
+        self.img_files = '/opt/program/pifuhd/sample_images/test_keypoints.json'
         self.IMG = image
 
         self.phase = 'val'
