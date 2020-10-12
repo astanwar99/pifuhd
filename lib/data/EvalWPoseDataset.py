@@ -166,7 +166,8 @@ class EvalWPoseDataset(Dataset):
         self.person_id = 0
 
     def __len__(self):
-        return len(self.img_files)
+        return 1
+#         return len(self.img_files)
 
     def getKeypoints(self, json):
         file_name = json
