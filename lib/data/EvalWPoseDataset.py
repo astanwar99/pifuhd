@@ -143,7 +143,8 @@ class EvalWPoseDataset(Dataset):
         self.projection_mode = projection
 
         self.root = self.opt.dataroot
-        self.img_files = '/opt/program/pifuhd/sample_images/test_keypoints.json'
+        # self.img_files = '/opt/program/pifuhd/sample_images/test_keypoints.json'
+        self.img_files = image_keypoints
         self.IMG = image
 
         self.phase = 'val'
@@ -251,8 +252,8 @@ class EvalWPoseDataset(Dataset):
         #         print('Waring: not sufficient keypoints.')
         
         
-        # keypoints = self.getKeypoints(self.img_files)
-        keypoints = np.array(selected_data['pose_keypoints_2d']).reshape(-1,3)
+        keypoints = self.getKeypoints(self.img_files)
+        # keypoints = np.array(selected_data['pose_keypoints_2d']).reshape(-1,3)
         im = self.IMG
         if im.shape[2] == 4:
             im = im / 255.0
