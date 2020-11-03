@@ -171,12 +171,12 @@ class EvalWPoseDataset(Dataset):
 #         return len(self.img_files)
 
     def getKeypoints(self, json):
-        file_name = json
-        with open(file_name) as infile:
-            raw = infile.read()
-            raw = raw.strip('[')
-            raw = raw.strip(']')
-            arr = raw.split(']], [[')
+        # file_name = json
+        # with open(file_name) as infile:
+        raw = json
+        raw = raw.strip('[')
+        raw = raw.strip(']')
+        arr = raw.split(']], [[')
 
         reconstructed_keypoints = []
         for person in arr:
