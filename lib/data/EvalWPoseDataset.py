@@ -203,9 +203,9 @@ class EvalWPoseDataset(Dataset):
         # img_name = os.path.splitext(os.path.basename(img_path))[0]
         # Calib
         
-        with open(self.img_files) as json_file:
-            data = json.load(json_file)
-        selected_data = data['people'][0]
+        # with open(self.img_files) as json_file:
+        #     data = json.load(json_file)
+        # selected_data = data['people'][0]
         #     if len(data['people']) == 0:
         #         raise IOError('non human found!!')
             
